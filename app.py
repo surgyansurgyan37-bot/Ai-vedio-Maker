@@ -1,44 +1,70 @@
-import os, json, re, uuid
+import os, uuid, re
 from pathlib import Path
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, FileResponse
-from pydantic import BaseModel
-from dotenv import load_dotenv
+from fastapi.responses import HTMLResponse, JSONResponse
 
-load_dotenv()
-from services import make_project, make_voice
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
 
-app = FastAPI(title="AI Long Video Maker v2")
+app = FastAPI(title="AI Long Video Maker")
+
 BASE = Path(__file__).parent
-OUT = BASE / "output"
-OUT.mkdir(exist_ok=True)
 
-class Request(BaseModel):
-    script: str
-    duration: int = 5
-    style: str = "Cinematic"
-    ratio: str = "16:9"
-    voice: str = "alloy"
+def make_project(script, duration, style, ratio):
+    sentences = [s.strip() for s in re.split(r'[.!?।]+', script) if s.strip()]
+    if not sentences:
+        sentences = [script.strip()]
+    count = max(6, min(60, int(duration) * 3))
+    each = max(4, round(int(duration) * 60 / count))
+    scenes = []
+    for i in range(count):
+        text = sentences[i % len(sentences)]
+        scenes.append({
+            "scene": i + 1,
+            "duration_seconds": each,
+            "narration": text,
+            "visual_prompt": f"{style}, cinematic, realistic, detailed shot, {text}",
+            "subtitle": text,
+            "ratio": ratio
+        })
+    return {
+        "status": "project_created",
+        "id": uuid.uuid4().hex,
+        "duration_minutes": int(duration),
+        "style": style,
+        "ratio": ratio,
+        "scenes": scenes
+    }
 
 @app.get("/", response_class=HTMLResponse)
 def home():
     return (BASE / "index.html").read_text(encoding="utf-8")
 
+@app.get("/api/health")
+def health():
+    return {"ok": True, "service": "AI Long Video Maker"}
+
 @app.post("/api/create")
-def create(req: Request):
-    project = make_project(req.script, req.duration, req.style, req.ratio)
-    project["id"] = uuid.uuid4().hex
-    (OUT / f"{project['id']}.json").write_text(json.dumps(project, ensure_ascii=False, indent=2), encoding="utf-8")
-    return project
+async def create(payload: dict):
+    script = (payload.get("script") or "").strip()
+    if not script:
+        return JSONResponse({"error": "पहले script लिखें।"}, status_code=400)
+    return make_project(
+        script,
+        payload.get("duration", 5),
+        payload.get("style", "Cinematic"),
+        payload.get("ratio", "16:9")
+    )
 
 @app.post("/api/voice/{project_id}")
-def voice(project_id: str, req: Request):
-    path = OUT / f"{project_id}.mp3"
-    text = req.script
-    make_voice(text, str(path), req.voice)
-    return {"audio": f"/output/{path.name}"}
-
-@app.get("/output/{name}")
-def output(name: str):
-    path = OUT / name
-    return FileResponse(path)
+async def voice(project_id: str, payload: dict):
+    # Voice is intentionally kept server-side; add OPENAI_API_KEY in Vercel later.
+    if not os.environ.get("OPENAI_API_KEY"):
+        return JSONResponse(
+            {"error": "Voice के लिए Vercel Environment Variables में OPENAI_API_KEY जोड़ें।"},
+            status_code=503
+        )
+    return JSONResponse({"error": "Voice endpoint तैयार है; API key सेट करने के बाद इसे enable किया जा सकता है."}, status_code=501)
