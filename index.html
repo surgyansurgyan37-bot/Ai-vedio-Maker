@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Long Video Maker v2</title>
+<style>
+body{font-family:Arial;background:#f3f5f7;margin:0;color:#111827}.wrap{max-width:1000px;margin:30px auto;padding:18px}
+.card{background:#fff;border-radius:18px;padding:24px;box-shadow:0 8px 30px #0001}textarea{width:100%;height:220px;box-sizing:border-box;padding:14px;border:1px solid #ccd3da;border-radius:12px;font-size:16px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}select,button{padding:11px;border-radius:10px;border:1px solid #ccd3da}button{background:#111827;color:#fff;border:0;cursor:pointer}
+pre{background:#f7f7f7;padding:15px;border-radius:12px;max-height:500px;overflow:auto}
+</style></head><body><div class="wrap"><div class="card">
+<h1>🎬 AI Long Video Maker v2</h1>
+<p>Script → Scenes → AI Voice. Video generation provider बाद में जोड़ सकते हैं।</p>
+<textarea id="script" placeholder="अपनी कहानी यहाँ लिखें..."></textarea>
+<div class="row">
+<label>Duration <select id="duration"><option>5</option><option>10</option><option>15</option><option>20</option></select> min</label>
+<label>Style <select id="style"><option>Cinematic</option><option>Realistic</option><option>Documentary</option><option>Educational</option></select></label>
+<label>Ratio <select id="ratio"><option>16:9</option><option>9:16</option></select></label>
+<label>Voice <select id="voice"><option>alloy</option><option>ash</option><option>coral</option><option>sage</option><option>verse</option></select></label>
+</div>
+<div class="row"><button onclick="createProject()">1. CREATE PROJECT</button><button onclick="makeVoice()">2. CREATE VOICE</button></div>
+<pre id="out">अपनी script डालें और CREATE PROJECT दबाएँ।</pre>
+<audio id="player" controls style="width:100%;margin-top:12px;display:none"></audio>
+</div></div>
+<script>
+let project=null;
+async function createProject(){
+ const script=document.getElementById('script').value.trim();
+ if(!script)return alert('पहले script लिखें।');
+ out.textContent='Scenes तैयार हो रहे हैं...';
+ const r=await fetch('/api/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+ script,duration:Number(duration.value),style:style.value,ratio:ratio.value,voice:voice.value})});
+ project=await r.json(); out.textContent=JSON.stringify(project,null,2);
+}
+async function makeVoice(){
+ if(!project)return alert('पहले CREATE PROJECT करें।');
+ out.textContent='AI voice तैयार हो रही है...';
+ const r=await fetch('/api/voice/'+project.id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+ script:document.getElementById('script').value,duration:Number(duration.value),style:style.value,ratio:ratio.value,voice:voice.value})});
+ const data=await r.json(); player.src=data.audio; player.style.display='block'; player.play(); out.textContent='Voice तैयार है।';
+}
+</script></body></html>
