@@ -1,14 +1,10 @@
-# AI Long Video Maker v2
+# AI Video Maker - Vercel Ready
 
-यह version script को scenes में बाँटता है और OpenAI API उपलब्ध होने पर AI narration + scene planning के लिए तैयार है।
+Upload this project to GitHub and import the repository into Vercel.
 
-## Setup
-1. Python 3.10+ रखें।
-2. `pip install -r requirements.txt`
-3. `.env.example` को `.env` नाम दें और अपनी API key डालें।
-4. `python app.py`
-5. Browser: http://127.0.0.1:8000
+Vercel Environment Variable:
+OPENAI_API_KEY = your private API key
 
-## Important
-API key को browser/frontend में कभी न डालें। केवल server-side `.env` में रखें।
-यह prototype अभी generated video clips को किसी external video-generation service से automatically नहीं बनाता; उसके लिए provider API जोड़नी होगी।
+Do NOT put the API key in public/index.html.
+
+The project includes real Script and TTS API routes. Image/video generation and server-side final MP4 rendering are not included yet.
