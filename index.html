@@ -1,40 +1,114 @@
 <!doctype html>
-<html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AI Long Video Maker v2</title>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Video Maker</title>
 <style>
-body{font-family:Arial;background:#f3f5f7;margin:0;color:#111827}.wrap{max-width:1000px;margin:30px auto;padding:18px}
-.card{background:#fff;border-radius:18px;padding:24px;box-shadow:0 8px 30px #0001}textarea{width:100%;height:220px;box-sizing:border-box;padding:14px;border:1px solid #ccd3da;border-radius:12px;font-size:16px}
-.row{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}select,button{padding:11px;border-radius:10px;border:1px solid #ccd3da}button{background:#111827;color:#fff;border:0;cursor:pointer}
-pre{background:#f7f7f7;padding:15px;border-radius:12px;max-height:500px;overflow:auto}
-</style></head><body><div class="wrap"><div class="card">
-<h1>🎬 AI Long Video Maker v2</h1>
-<p>Script → Scenes → AI Voice. Video generation provider बाद में जोड़ सकते हैं।</p>
-<textarea id="script" placeholder="अपनी कहानी यहाँ लिखें..."></textarea>
-<div class="row">
-<label>Duration <select id="duration"><option>5</option><option>10</option><option>15</option><option>20</option></select> min</label>
-<label>Style <select id="style"><option>Cinematic</option><option>Realistic</option><option>Documentary</option><option>Educational</option></select></label>
-<label>Ratio <select id="ratio"><option>16:9</option><option>9:16</option></select></label>
-<label>Voice <select id="voice"><option>alloy</option><option>ash</option><option>coral</option><option>sage</option><option>verse</option></select></label>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#0b1020;color:#fff}
+.wrap{max-width:900px;margin:auto;padding:22px}.hero{padding:28px 0 18px}h1{font-size:34px;margin:0 0 8px}.sub{color:#aeb8d0}
+.card{background:#121a2e;border:1px solid #273451;border-radius:18px;padding:20px;margin:16px 0}
+label{display:block;margin:14px 0 7px;color:#cbd5e1;font-weight:600}
+input,select,textarea,button{width:100%;border-radius:12px;border:1px solid #33415f;background:#0d1426;color:#fff;padding:13px;font-size:16px}
+textarea{min-height:220px;resize:vertical}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+button{background:#2563eb;border:0;font-weight:700;cursor:pointer;margin-top:15px}button.secondary{background:#1f2937}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.status{margin-top:12px;color:#9fb0d0}.scene{padding:12px;border:1px solid #2b3957;border-radius:12px;margin:8px 0;background:#0e1628}
+.small{font-size:13px;color:#8fa0bf}.preview{aspect-ratio:16/9;background:#050914;border:1px solid #2b3957;border-radius:14px;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px}
+@media(max-width:650px){.grid,.row{grid-template-columns:1fr}h1{font-size:28px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1>🎬 AI Video Maker</h1>
+    <div class="sub">Topic → Script → Scenes → Voice → Preview</div>
+  </div>
+
+  <div class="card">
+    <label>वीडियो का Topic</label>
+    <input id="topic" placeholder="जैसे: ₹0 से बिज़नेस कैसे शुरू करें?">
+
+    <div class="grid">
+      <div>
+        <label>Language</label>
+        <select id="language"><option>Hindi</option><option>English</option></select>
+      </div>
+      <div>
+        <label>Duration</label>
+        <select id="duration"><option>1 minute</option><option>5 minutes</option><option>10 minutes</option><option>20 minutes</option></select>
+      </div>
+    </div>
+
+    <label>Format</label>
+    <select id="format"><option>YouTube 16:9</option><option>Shorts 9:16</option></select>
+
+    <button id="scriptBtn">✨ Generate AI Script</button>
+    <div id="status" class="status"></div>
+  </div>
+
+  <div class="card">
+    <label>Script</label>
+    <textarea id="script" placeholder="यहाँ आपकी script आएगी..."></textarea>
+    <button id="sceneBtn" class="secondary">🎞️ Generate Scenes</button>
+    <div id="scenes"></div>
+  </div>
+
+  <div class="card">
+    <label>अपनी Photo चुनें</label>
+    <input id="photo" type="file" accept="image/*">
+    <div id="photoInfo" class="small"></div>
+
+    <button id="voiceBtn">🔊 AI Voice</button>
+    <button id="speakBtn" class="secondary">🗣️ Browser Voice Preview</button>
+    <audio id="audio" controls style="width:100%;margin-top:12px;display:none"></audio>
+  </div>
+
+  <div class="card">
+    <h2>Preview</h2>
+    <div class="preview" id="preview">आपकी वीडियो का preview यहाँ दिखाई देगा।</div>
+    <button id="exportBtn">⬇️ Export Video</button>
+    <div class="small" style="margin-top:10px">नोट: इस clean Vercel version में script और voice API तैयार हैं। Final MP4 rendering के लिए बाद में video-rendering service जोड़नी होगी।</div>
+  </div>
 </div>
-<div class="row"><button onclick="createProject()">1. CREATE PROJECT</button><button onclick="makeVoice()">2. CREATE VOICE</button></div>
-<pre id="out">अपनी script डालें और CREATE PROJECT दबाएँ।</pre>
-<audio id="player" controls style="width:100%;margin-top:12px;display:none"></audio>
-</div></div>
+
 <script>
-let project=null;
-async function createProject(){
- const script=document.getElementById('script').value.trim();
- if(!script)return alert('पहले script लिखें।');
- out.textContent='Scenes तैयार हो रहे हैं...';
- const r=await fetch('/api/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
- script,duration:Number(duration.value),style:style.value,ratio:ratio.value,voice:voice.value})});
- project=await r.json(); out.textContent=JSON.stringify(project,null,2);
-}
-async function makeVoice(){
- if(!project)return alert('पहले CREATE PROJECT करें।');
- out.textContent='AI voice तैयार हो रही है...';
- const r=await fetch('/api/voice/'+project.id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
- script:document.getElementById('script').value,duration:Number(duration.value),style:style.value,ratio:ratio.value,voice:voice.value})});
- const data=await r.json(); player.src=data.audio; player.style.display='block'; player.play(); out.textContent='Voice तैयार है।';
-}
-</script></body></html>
+const $=id=>document.getElementById(id);
+function setStatus(t){$("status").textContent=t}
+$("scriptBtn").onclick=async()=>{
+  const topic=$("topic").value.trim();
+  if(!topic){setStatus("पहले topic लिखें।");return}
+  setStatus("Script तैयार हो रही है...");
+  try{
+    const r=await fetch("/api/script",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({topic,language:$("language").value,duration:$("duration").value})});
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.error||"Request failed");
+    $("script").value=d.script||"";
+    setStatus(d.demo?"Demo script तैयार है। OPENAI_API_KEY जोड़ने पर real AI script चलेगी।":"AI script तैयार है।");
+  }catch(e){setStatus("Error: "+e.message)}
+};
+$("sceneBtn").onclick=()=>{
+  const text=$("script").value.trim();
+  if(!text){$("status").textContent="पहले script generate करें।";return}
+  const parts=text.split(/\n+/).filter(Boolean).slice(0,12);
+  $("scenes").innerHTML=parts.map((p,i)=>`<div class="scene"><b>Scene ${i+1}</b><br>${p}</div>`).join("");
+};
+$("photo").onchange=e=>{$("photoInfo").textContent=e.target.files[0]?("Selected: "+e.target.files[0].name):""};
+$("speakBtn").onclick=()=>{
+  const t=$("script").value.trim(); if(!t){setStatus("पहले script लिखें।");return}
+  if(!("speechSynthesis" in window)){setStatus("इस browser में voice preview उपलब्ध नहीं है।");return}
+  speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t); u.lang=$("language").value==="Hindi"?"hi-IN":"en-US"; speechSynthesis.speak(u);
+};
+$("voiceBtn").onclick=async()=>{
+  const text=$("script").value.trim(); if(!text){setStatus("पहले script लिखें।");return}
+  setStatus("AI voice तैयार हो रही है...");
+  try{
+    const r=await fetch("/api/voice",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
+    if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.error||"Voice request failed")}
+    const blob=await r.blob(); const url=URL.createObjectURL(blob); $("audio").src=url; $("audio").style.display="block"; setStatus("AI voice तैयार है।");
+  }catch(e){setStatus("Error: "+e.message+" — चाहें तो Browser Voice Preview इस्तेमाल करें।")}
+};
+$("exportBtn").onclick=()=>alert("Preview तैयार है। Final MP4 export के लिए rendering service जोड़ना बाकी है।");
+</script>
+</body>
+</html>

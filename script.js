@@ -1,78 +1,28 @@
+import OpenAI from "openai";
+
 export default async function handler(req, res) {
-  // Only allow POST requests
-  if (req.method !== "POST") {
-    return res.status(405).json({
-      error: "Only POST requests are allowed"
-    });
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  const { topic, language = "Hindi", duration = "1 minute" } = req.body || {};
+  if (!topic) return res.status(400).json({ error: "Topic is required" });
+
+  if (!process.env.OPENAI_API_KEY) {
+    const demo = language.toLowerCase().startsWith("hindi")
+      ? `वीडियो विषय: ${topic}\n\nनमस्कार दोस्तों! आज हम बात करेंगे ${topic} के बारे में।\n\nइस वीडियो में हम आसान भाषा में मुख्य बातें समझेंगे, जरूरी कदम देखेंगे और अंत में कुछ उपयोगी सुझाव साझा करेंगे।\n\nध्यान रखें कि किसी भी फैसले से पहले अपनी स्थिति के अनुसार सही जानकारी जरूर जाँचें।\n\nअगर यह जानकारी उपयोगी लगी हो तो वीडियो को शेयर करें और ऐसे ही नए वीडियो के लिए जुड़े रहें।`
+      : `Video topic: ${topic}\n\nHello everyone! Today we will talk about ${topic}.\n\nIn this video, we will explain the key ideas in simple language, look at practical steps, and finish with useful tips.\n\nAlways verify important information for your own situation.\n\nIf you found this useful, share the video and follow for more.`;
+    return res.status(200).json({ script: demo, demo: true });
   }
 
   try {
-    const { topic, duration = 60, language = "Hindi" } = req.body || {};
+    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const model = process.env.OPENAI_MODEL;
+    if (!model) return res.status(500).json({ error: "Set OPENAI_MODEL in Vercel Environment Variables." });
 
-    if (!topic) {
-      return res.status(400).json({
-        error: "Topic is required"
-      });
-    }
-
-    const prompt = `
-Create a complete AI video script.
-
-Topic: ${topic}
-Duration: ${duration} seconds
-Language: ${language}
-
-Give:
-1. Strong hook
-2. Voice-over narration
-3. Scene-by-scene visual prompts
-4. On-screen text
-5. Ending/CTA
-
-Make it suitable for YouTube Shorts and Instagram Reels.
-`;
-
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" +
-        process.env.GEMINI_API_KEY,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt
-                }
-              ]
-            }
-          ]
-        })
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return res.status(response.status).json({
-        error: data.error?.message || "AI request failed"
-      });
-    }
-
-    const result =
-      data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-    return res.status(200).json({
-      success: true,
-      script: result
+    const response = await client.responses.create({
+      model,
+      input: `Create a clear, engaging video script.\nTopic: ${topic}\nLanguage: ${language}\nTarget duration: ${duration}\nUse natural spoken language and useful structure.`
     });
-
-  } catch (error) {
-    return res.status(500).json({
-      error: error.message
-    });
+    return res.status(200).json({ script: response.output_text || "" });
+  } catch (e) {
+    return res.status(500).json({ error: e.message || "AI request failed" });
   }
 }

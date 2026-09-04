@@ -1,8 +1,9 @@
 {
-  "name":"ai-video-maker",
-  "version":"1.0.0",
-  "private":true,
-  "type":"module",
-  "scripts":{"start":"node server.js"},
-  "dependencies":{"openai":"^5.12.0"}
+  "name": "ai-video-maker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "openai": "^5.12.0"
+  }
 }
